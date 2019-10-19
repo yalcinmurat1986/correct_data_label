@@ -6,7 +6,8 @@ from correct_data_labels import correct_labels
 def start_correct(num_of_wrongs, 
                     repeats, 
                     split_rate,
-                    path):
+                    path,
+                    epochs):
     if not num_of_wrongs:
         num_of_wrongs = [100, 500, 1000, 2000]
     if not repeats:
@@ -33,6 +34,7 @@ def start_correct(num_of_wrongs,
             for k in split_rate:
                 cl = correct_labels(dataset = dataset,
                                     label_column_name = 'label', 
+                                    epochs = epochs,
                                     num_of_wrongs = i, 
                                     repeats = j, 
                                     split_rate = k,
@@ -52,9 +54,11 @@ if __name__=='__main__':
     parser.add_argument('--split_rate',  required = False, 
     default = None, nargs = '+')
     parser.add_argument('--path', type = str, required = False)
+    parser.add_argument('--epochs', type = int, required = False, default = 30)
     args = parser.parse_args()
 
     start_correct(args.num_of_wrongs, 
                     args.repeats, 
                     args.split_rate,
-                    args.path)
+                    args.path,
+                    args.epochs)

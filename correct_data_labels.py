@@ -34,8 +34,10 @@ class correct_labels:
                  num_of_wrongs, 
                  repeats, 
                  split_rate, # 3/4 train, 1/4 predict
+                 epochs,
                  iris = None,
                  mnist = None):
+        self.epochs = epochs
         self.dataset = dataset
         self.label_column_name = label_column_name
         self.split_rate = split_rate 
@@ -123,11 +125,11 @@ class correct_labels:
        
 
     def fit_cnn(self, model, X_train, Y_train, X_val, Y_val):
-        epochs = 1 # Turn epochs to 30 to get 0.9967 accuracy
+
         batch_size = 64
 
         # without data augmentation
-        model.fit(X_train, Y_train, batch_size = batch_size, epochs = epochs, 
+        model.fit(X_train, Y_train, batch_size = batch_size, epochs = self.epochs, 
         validation_data = (X_val, Y_val), verbose = 2)
 
         return model     
@@ -275,7 +277,7 @@ class correct_labels:
             
 #             # Fit the model
 #             history = model.fit_generator(datagen.flow(X_train,Y_train, batch_size=batch_size),
-#                               epochs = epochs, validation_data = (X_val,Y_val),
+#                               epochs = self.epochs, validation_data = (X_val,Y_val),
 #                               verbose = 2, steps_per_epoch=X_train.shape[0] // batch_size
 #                               , callbacks=[learning_rate_reduction])
             print('multi model prediction in progress...')
