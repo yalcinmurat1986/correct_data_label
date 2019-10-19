@@ -3,14 +3,18 @@ from argparse import ArgumentParser
 
 from correct_data_labels import correct_labels
 
-def start_correct(num_of_wrongs, repeats, split_rate):
+def start_correct(num_of_wrongs, 
+                    repeats, 
+                    split_rate,
+                    path):
     if not num_of_wrongs:
         num_of_wrongs = [100, 500, 1000, 2000]
     if not repeats:
         repeats = [20, 40]
     if not split_rate:
         split_rate = [15, 25, 50, 100]
-    path = '/Users/muratyalcin/Downloads/train.csv'
+    if not path:
+        path = '/Users/muratyalcin/Downloads/train.csv'
     def load_mnist_dataset(path):
         t = pandas.read_csv(path)
         cols = list(t.columns)
@@ -47,6 +51,10 @@ if __name__=='__main__':
     default = None,  nargs = '+')
     parser.add_argument('--split_rate',  required = False, 
     default = None, nargs = '+')
+    parser.add_argument('--path', type = str, required = False)
     args = parser.parse_args()
 
-    start_correct(args.num_of_wrongs, args.repeats, args.split_rate)
+    start_correct(args.num_of_wrongs, 
+                    args.repeats, 
+                    args.split_rate,
+                    args.path)
