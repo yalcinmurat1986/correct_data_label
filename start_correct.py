@@ -15,7 +15,8 @@ def start_correct(num_of_wrongs,
     if not split_rate:
         split_rate = [15, 25, 50, 100]
     if not path:
-        path = '/Users/muratyalcin/Downloads/train.csv'
+        path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
+        # path = '/Users/muratyalcin/Downloads/train.csv'
     def load_mnist_dataset(path):
         t = pandas.read_csv(path)
         cols = list(t.columns)
