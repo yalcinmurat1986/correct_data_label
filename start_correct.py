@@ -55,7 +55,7 @@ if __name__=='__main__':
     parser.add_argument('--split_rate',  required = False, 
     default = None, nargs = '+')
     parser.add_argument('--path', type = str, required = False)
-    parser.add_argument('--epochs', type = int, required = False, default = 30)
+    parser.add_argument('--epochs', type = int, required = False, default = 10)
     args = parser.parse_args()
 
     start_correct(args.num_of_wrongs, 

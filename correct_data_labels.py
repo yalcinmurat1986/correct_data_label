@@ -145,6 +145,7 @@ class correct_labels:
     def multi_model_predict(self, X_train, y_train, X_test):
         preds = []
         for model in list(self.models.values()):
+            print(f'fitting and predicting with {model}')
             model = self.fit_(model, X_train, y_train)
             predictions = self.predict_(model, X_test)
             preds.append(predictions)
@@ -153,12 +154,11 @@ class correct_labels:
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
         preds = []
         for model in list(self.models.values()):
+            print(f'fitting and predicting with {model}')
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
             predictions = self.predict_(model, X_test)
-            print('predictions before : \n', predictions)
             # Convert one hot vectors to predictions classes 
             predictions = np.argmax(predictions,axis = 1) 
-            print('predictions after : \n', predictions)
             preds.append(predictions)
         return preds
     
@@ -280,9 +280,7 @@ class correct_labels:
 #                               epochs = self.epochs, validation_data = (X_val,Y_val),
 #                               verbose = 2, steps_per_epoch=X_train.shape[0] // batch_size
 #                               , callbacks=[learning_rate_reduction])
-            print('multi model prediction in progress...')
             preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
-            print('multi model prediction completed successfully...')
             num_models = len(self.models)
             assert len(preds[0]) == split_point
             y_indexes = list(test_data.index)
