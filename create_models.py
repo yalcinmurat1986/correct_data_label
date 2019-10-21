@@ -5,8 +5,17 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
 from keras.optimizers import RMSprop, Adam
 from keras.layers.normalization import BatchNormalization
 
+         
+def create_baseline_model(num_of_labels, num_of_features):
+    # create model
+    model = Sequential()
+    model.add(Dense(num_of_features, input_dim=num_of_features, kernel_initializer='normal', activation='relu'))
+    model.add(Dense(num_of_labels, kernel_initializer='normal', activation='softmax'))
+    # Compile model
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    return model
 
-def create_cnn_model_2():
+def create_cnn_model_2(num_of_labels):
     model = Sequential()
 
     model.add(Conv2D(filters = 16, kernel_size = (3, 3), activation='relu',
@@ -33,13 +42,13 @@ def create_cnn_model_2():
     model.add(Dropout(0.25))
     model.add(Dense(1024, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(num_of_labels, activation='softmax'))
     model.compile(loss='categorical_crossentropy', 
                     optimizer = Adam(lr=1e-4), metrics=["accuracy"])
     return model
 
 
-def create_cnn_model():
+def create_cnn_model(num_of_labels):
     # Set the CNN model 
     # my CNN architechture is In -> 
     #[[Conv2D->relu]*2 -> MaxPool2D -> Dropout]*2 -> Flatten -> Dense -> Dropout -> Out
@@ -62,7 +71,7 @@ def create_cnn_model():
     model.add(Flatten())
     model.add(Dense(256, activation = "relu"))
     model.add(Dropout(0.5))
-    model.add(Dense(10, activation = "softmax"))
+    model.add(Dense(num_of_labels, activation = "softmax"))
     
     # Define the optimizer
     optimizer = RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
@@ -72,7 +81,7 @@ def create_cnn_model():
     return model
 
 
-def create_multi_cnn_model():
+def create_multi_cnn_model(num_of_labels):
     # BUILD CONVOLUTIONAL NEURAL NETWORKS
     nets = 15
     model = [0] *nets
@@ -98,7 +107,7 @@ def create_multi_cnn_model():
         model[j].add(BatchNormalization())
         model[j].add(Flatten())
         model[j].add(Dropout(0.4))
-        model[j].add(Dense(10, activation='softmax'))
+        model[j].add(Dense(num_of_labels, activation='softmax'))
 
         # COMPILE WITH ADAM OPTIMIZER AND CROSS ENTROPY COST
         model[j].compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])

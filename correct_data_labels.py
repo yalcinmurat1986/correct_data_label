@@ -9,10 +9,11 @@ from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier,\
+AdaBoostClassifier, GradientBoostingClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.naive_bayes import GaussianNB
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
 from sklearn.svm import SVC
 from collections import defaultdict, Counter
 from keras.models import Sequential
@@ -20,11 +21,11 @@ from keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPool2D
 from keras.utils import np_utils
 from sklearn.utils import shuffle
 from keras.utils.np_utils import to_categorical # convert to one-hot-encoding
-
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ReduceLROnPlateau
 
-from create_models import create_cnn_model, create_cnn_model_2
+from create_models import create_cnn_model, \
+    create_cnn_model_2, create_baseline_model
 
 class correct_labels:
     
@@ -43,7 +44,8 @@ class correct_labels:
         self.split_rate = split_rate 
         self.num_of_wrongs = num_of_wrongs
         self.repeats = repeats
-        self.models = self.form_models()
+        self.mlmodels = self.form_ml_models()
+        self.dlmodels = self.form_dl_models()
         #if iris:
         #    assert mnist is None
         #    self.dataset = self.load_iris_dataset()
@@ -100,34 +102,28 @@ class correct_labels:
         y = vector[:,self.num_of_features]
         return X, y 
         
-    def form_models(self):
+    def form_ml_models(self):
         models = {}
-        #models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
-        #models['LDA'] = LinearDiscriminantAnalysis()
-        #models['KNN'] = KNeighborsClassifier()
-#         models['CART'] = DecisionTreeClassifier()
-#         models['RF'] = RandomForestClassifier()
-        #models['NB'] = GaussianNB()
-        #models['SVM'] = SVC(gamma='auto')
-        #models['baseline'] = self.baseline_model()
-        models['CNN'] = create_cnn_model()
-        models['CNN2'] = create_cnn_model_2()
+        models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
+        models['KNN'] = KNeighborsClassifier()
+        models['RF'] = RandomForestClassifier()
+        models['NB'] = GaussianNB()
+        models['SVM'] = SVC(gamma='auto')
+        models['MultinomialNB'] = MultinomialNB()
+        models['AdaBoost'] = AdaBoostClassifier() 
+        models['GradientBoost'] = GradientBoostingClassifier()
         return models
-         
-    def baseline_model(self):
-        # create model
-        model = Sequential()
-        model.add(Dense(self.num_of_features, input_dim=self.num_of_features, kernel_initializer='normal', activation='relu'))
-        model.add(Dense(self.num_of_labels, kernel_initializer='normal', activation='softmax'))
-        # Compile model
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-        return model
-       
+
+    def form_dl_models(self):
+        models = {}
+        # models['baseline'] = create_baseline_model(self.num_of_labels, self.num_of_features)
+        models['CNN'] = create_cnn_model(self.num_of_labels)
+        models['CNN2'] = create_cnn_model_2(self.num_of_labels)
+        return models       
 
     def fit_cnn(self, model, X_train, Y_train, X_val, Y_val):
 
         batch_size = 64
-
         # without data augmentation
         model.fit(X_train, Y_train, batch_size = batch_size, epochs = self.epochs, 
         validation_data = (X_val, Y_val), verbose = 2)
@@ -144,7 +140,7 @@ class correct_labels:
         
     def multi_model_predict(self, X_train, y_train, X_test):
         preds = []
-        for model in list(self.models.values()):
+        for model in list(self.mlmodels.values()):
             print(f'fitting and predicting with {model}')
             model = self.fit_(model, X_train, y_train)
             predictions = self.predict_(model, X_test)
@@ -153,7 +149,7 @@ class correct_labels:
     
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
         preds = []
-        for model in list(self.models.values()):
+        for model in list(self.dlmodels.values()):
             print(f'fitting and predicting with {model}')
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
             predictions = self.predict_(model, X_test)
@@ -211,7 +207,7 @@ class correct_labels:
             X_test, y_test = self.x_y_split_vector(test_data_) 
             
             preds = self.multi_model_predict(X_train, y_train, X_test)
-            num_models = len(self.models)
+            num_models = len(self.mlmodels)
             assert len(preds[0]) == split_point
             y_indexes = list(test_data.index)
             for x in range(num_models):
@@ -281,7 +277,7 @@ class correct_labels:
 #                               verbose = 2, steps_per_epoch=X_train.shape[0] // batch_size
 #                               , callbacks=[learning_rate_reduction])
             preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
-            num_models = len(self.models)
+            num_models = len(self.dlmodels)
             assert len(preds[0]) == split_point
             y_indexes = list(test_data.index)
             for x in range(num_models):
