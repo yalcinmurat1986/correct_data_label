@@ -11,7 +11,7 @@ def start_correct(num_of_wrongs,
     if not num_of_wrongs:
         num_of_wrongs = [100, 500, 1000, 2000]
     if not repeats:
-        repeats = [20, 40]
+        repeats = [20, 40, 100]
     if not split_rate:
         split_rate = [15, 25, 50, 100]
     if not path:
