@@ -9,11 +9,14 @@ def start_correct(num_of_wrongs,
                     path,
                     epochs):
     if not num_of_wrongs:
-        num_of_wrongs = [100, 500]
+        # num_of_wrongs = [100, 500]
+        num_of_wrongs = [10]
     if not repeats:
-        repeats = [1000, 10000]
+        # repeats = [1000, 10000]
+        repeats = [3]
     if not split_rate:
-        split_rate = [15, 25, 50, 100]
+        # split_rate = [15, 25, 50, 100]
+        split_rate = [50]
     if not path:
         path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
         # path = '/Users/muratyalcin/Downloads/train.csv'
