@@ -1,7 +1,7 @@
 import pandas
 from argparse import ArgumentParser
 
-from correct_data_labels import correct_labels
+from correct_data_labels import CorrectLabels
 
 def start_correct(num_of_wrongs, 
                     repeats, 
@@ -9,9 +9,9 @@ def start_correct(num_of_wrongs,
                     path,
                     epochs):
     if not num_of_wrongs:
-        num_of_wrongs = [100, 500, 1000, 2000]
+        num_of_wrongs = [100, 500]
     if not repeats:
-        repeats = [20, 40, 100]
+        repeats = [1000, 10000]
     if not split_rate:
         split_rate = [15, 25, 50, 100]
     if not path:
@@ -33,7 +33,7 @@ def start_correct(num_of_wrongs,
     for i in num_of_wrongs:
         for j in repeats:
             for k in split_rate:
-                cl = correct_labels(dataset = dataset,
+                cl = CorrectLabels(dataset = dataset,
                                     label_column_name = 'label', 
                                     epochs = epochs,
                                     num_of_wrongs = i, 

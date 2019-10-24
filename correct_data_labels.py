@@ -27,14 +27,14 @@ from keras.callbacks import ReduceLROnPlateau
 from create_models import create_cnn_model, \
     create_cnn_model_2, create_baseline_model
 
-class correct_labels:
+class CorrectLabels:
     
     def __init__(self,
                  dataset,
-                 label_column_name:str, 
+                 label_column_name, 
                  num_of_wrongs, 
                  repeats, 
-                 split_rate, # 3/4 train, 1/4 predict
+                 split_rate,
                  epochs,
                  iris = None,
                  mnist = None):
@@ -44,6 +44,9 @@ class correct_labels:
         self.split_rate = split_rate 
         self.num_of_wrongs = num_of_wrongs
         self.repeats = repeats
+        self.num_of_features = self.dataset.shape[1]-1
+        self.labels = list(self.dataset[label_column_name].unique())
+        self.num_of_labels = len(self.labels)
         self.mlmodels = self.form_ml_models()
         self.dlmodels = self.form_dl_models()
         #if iris:
@@ -51,9 +54,6 @@ class correct_labels:
         #    self.dataset = self.load_iris_dataset()
         #if mnist:
         #    self.dataset = self.load_mnist_dataset()
-        self.num_of_features = self.dataset.shape[1]-1
-        self.labels = list(self.dataset[label_column_name].unique())
-        self.num_of_labels = len(self.labels)
         
     
     def load_iris_dataset(self):
