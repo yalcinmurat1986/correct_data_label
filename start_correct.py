@@ -51,7 +51,7 @@ def start_correct(num_of_wrongs,
                 result = cl.correct_wrong_labels()
                 results.append(result)
     res = pandas.DataFrame(results)
-    res.to_csv('results.csv')
+    res.to_csv('ml_results.csv')
 
 if __name__=='__main__':
     parser = ArgumentParser()
