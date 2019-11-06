@@ -104,14 +104,14 @@ class CorrectLabels:
         
     def form_ml_models(self):
         models = {}
-        models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
+        #models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
         models['KNN'] = KNeighborsClassifier()
         models['RF'] = RandomForestClassifier()
-        models['NB'] = GaussianNB()
+        #models['NB'] = GaussianNB()
         models['SVM'] = SVC(gamma='auto')
-        models['MultinomialNB'] = MultinomialNB()
-        models['AdaBoost'] = AdaBoostClassifier() 
-        models['GradientBoost'] = GradientBoostingClassifier()
+        #models['MultinomialNB'] = MultinomialNB()
+        #models['AdaBoost'] = AdaBoostClassifier() 
+        #models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
     def form_dl_models(self):

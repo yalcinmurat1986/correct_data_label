@@ -9,11 +9,11 @@ def start_correct(num_of_wrongs,
                     path,
                     epochs):
     if not num_of_wrongs:
-        num_of_wrongs = [100, 500]
+        num_of_wrongs = [100]
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [1000, 10000]
+        repeats = [1000]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
@@ -47,7 +47,8 @@ def start_correct(num_of_wrongs,
                                     split_rate = k,
                                    mnist = True)
                 print('\ncombination : \n', (i, j, k) , '\n')
-                result = cl.correct_wrong_labels_cnn()
+                # result = cl.correct_wrong_labels_cnn()
+                result = cl.correct_wrong_labels()
                 results.append(result)
     res = pandas.DataFrame(results)
     res.to_csv('results.csv')
