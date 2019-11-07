@@ -17,7 +17,7 @@ def start_correct(num_of_wrongs,
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [15, 25, 50, 100]
+        split_rate = [50]
     else:
         split_rate = [int(v) for v in split_rate]
     if not path:
@@ -51,7 +51,7 @@ def start_correct(num_of_wrongs,
                 result = cl.correct_wrong_labels()
                 results.append(result)
     res = pandas.DataFrame(results)
-    res.to_csv('ml_results.csv')
+    res.to_csv('ml_results_2.csv')
 
 if __name__=='__main__':
     parser = ArgumentParser()

@@ -140,8 +140,8 @@ class CorrectLabels:
         
     def multi_model_predict(self, X_train, y_train, X_test):
         preds = []
-        for model in list(self.mlmodels.values()):
-            print(f'fitting and predicting with {model}')
+        for model_name, model in self.mlmodels.items():
+            print(f'fitting and predicting with {model_name}')
             model = self.fit_(model, X_train, y_train)
             predictions = self.predict_(model, X_test)
             preds.append(predictions)
@@ -149,8 +149,8 @@ class CorrectLabels:
     
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
         preds = []
-        for model in list(self.dlmodels.values()):
-            print(f'fitting and predicting with {model}')
+        for model_name, model in self.dlmodels.items():
+            print(f'fitting and predicting with {model_name}')
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
             predictions = self.predict_(model, X_test)
             # Convert one hot vectors to predictions classes 
