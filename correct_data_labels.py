@@ -111,7 +111,7 @@ class CorrectLabels:
         # models['SVM'] = SVC(gamma='auto')
         #models['MultinomialNB'] = MultinomialNB()
         models['AdaBoost'] = AdaBoostClassifier() 
-        models['GradientBoost'] = GradientBoostingClassifier()
+        # models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
     def form_dl_models(self):
