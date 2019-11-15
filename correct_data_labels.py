@@ -199,6 +199,7 @@ class CorrectLabels:
         tracker = defaultdict(list)
         wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
         for i in range(self.repeats):
+            print(f'processing {i}/{self.repeats}')
             dataset = self.shuffle_dataset(wrong_dataset)
             train_data, test_data, split_point = self.dataset_train_test_split(wrong_dataset)
             train_data_ = self.df_to_vector(train_data)
