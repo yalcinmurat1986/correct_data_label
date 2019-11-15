@@ -108,10 +108,10 @@ class CorrectLabels:
         models['KNN'] = KNeighborsClassifier()
         models['RF'] = RandomForestClassifier()
         #models['NB'] = GaussianNB()
-        models['SVM'] = SVC(gamma='auto')
+        # models['SVM'] = SVC(gamma='auto')
         #models['MultinomialNB'] = MultinomialNB()
-        #models['AdaBoost'] = AdaBoostClassifier() 
-        #models['GradientBoost'] = GradientBoostingClassifier()
+        models['AdaBoost'] = AdaBoostClassifier() 
+        models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
     def form_dl_models(self):

@@ -8,6 +8,7 @@ def start_correct(num_of_wrongs,
                     split_rate,
                     path,
                     epochs,
+                    ml,
                     save_file_name):
     if not num_of_wrongs:
         num_of_wrongs = [100]
@@ -48,8 +49,10 @@ def start_correct(num_of_wrongs,
                                     split_rate = k,
                                    mnist = True)
                 print('\ncombination : \n', (i, j, k) , '\n')
-                # result = cl.correct_wrong_labels_cnn()
-                result = cl.correct_wrong_labels()
+                if ml:
+                    result = cl.correct_wrong_labels()
+                else:
+                    result = cl.correct_wrong_labels_cnn()
                 results.append(result)
     res = pandas.DataFrame(results)
     res.to_csv(f'{save_file_name}.csv')
@@ -64,6 +67,7 @@ if __name__=='__main__':
     default = None, nargs = '+')
     parser.add_argument('--path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
+    parser.add_argument('--ml', action = 'store_true')
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
     args = parser.parse_args()
 
@@ -72,4 +76,5 @@ if __name__=='__main__':
                     args.split_rate,
                     args.path,
                     args.epochs,
+                    args.ml,
                     args.save_file_name)
