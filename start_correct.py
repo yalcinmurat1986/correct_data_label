@@ -7,7 +7,8 @@ def start_correct(num_of_wrongs,
                     repeats, 
                     split_rate,
                     path,
-                    epochs):
+                    epochs,
+                    save_file_name):
     if not num_of_wrongs:
         num_of_wrongs = [100]
     else:
@@ -51,7 +52,7 @@ def start_correct(num_of_wrongs,
                 result = cl.correct_wrong_labels()
                 results.append(result)
     res = pandas.DataFrame(results)
-    res.to_csv('ml_results_2.csv')
+    res.to_csv(f'{save_file_name}.csv')
 
 if __name__=='__main__':
     parser = ArgumentParser()
@@ -63,10 +64,12 @@ if __name__=='__main__':
     default = None, nargs = '+')
     parser.add_argument('--path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
+    parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
     args = parser.parse_args()
 
     start_correct(args.num_of_wrongs, 
                     args.repeats, 
                     args.split_rate,
                     args.path,
-                    args.epochs)
+                    args.epochs,
+                    args.save_file_name)
