@@ -38,6 +38,8 @@ class CorrectLabels:
                  epochs,
                  iris = None,
                  mnist = None):
+        assert split_rate > 0
+        assert split_rate < 1
         self.epochs = epochs
         self.dataset = dataset
         self.label_column_name = label_column_name
@@ -89,7 +91,7 @@ class CorrectLabels:
         return wrong_dataset, trues, wrongs, change_indexes
     
     def dataset_train_test_split(self, dataset):
-        split_point = int(len(dataset)/self.split_rate)
+        split_point = int(len(dataset) * self.split_rate)
         train_data = dataset[split_point:]
         test_data = dataset[:split_point]
         return train_data, test_data, split_point
