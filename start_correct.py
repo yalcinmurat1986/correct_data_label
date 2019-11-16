@@ -19,9 +19,9 @@ def start_correct(num_of_wrongs,
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [50]
+        split_rate = [0.01]
     else:
-        split_rate = [int(v) for v in split_rate]
+        split_rate = [float(v) for v in split_rate]
     if not path:
         path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
         # path = '/Users/muratyalcin/Downloads/train.csv'
