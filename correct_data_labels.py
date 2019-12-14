@@ -1,5 +1,6 @@
 import pandas, random
 import numpy as np
+import logging
 from pandas.plotting import scatter_matrix
 import matplotlib.pyplot as plt
 from sklearn import model_selection
@@ -24,9 +25,14 @@ from keras.utils.np_utils import to_categorical # convert to one-hot-encoding
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import ReduceLROnPlateau
 
+
 from create_models import create_cnn_model, \
     create_cnn_model_2, create_baseline_model
 
+logging.basicConfig(
+            format = '%(asctime)s:%(funcName)s:%(levelname)s:%(name)s:%(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 class CorrectLabels:
     
     def __init__(self,
@@ -36,10 +42,14 @@ class CorrectLabels:
                  repeats, 
                  split_rate,
                  epochs,
+                 min_num_predictions = 0,
+                 threshold = 0.85,
                  iris = None,
                  mnist = None):
         assert split_rate > 0
         assert split_rate < 1
+        self.threshold = threshold
+        self.min_num_predictions = min_num_predictions
         self.epochs = epochs
         self.dataset = dataset
         self.label_column_name = label_column_name
@@ -56,8 +66,49 @@ class CorrectLabels:
         #    self.dataset = self.load_iris_dataset()
         #if mnist:
         #    self.dataset = self.load_mnist_dataset()
-        
+
+    def correct_wrong_labels(self):
+        tracker = defaultdict(list)
+        wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
+
+        for i in range(self.repeats):
+            print(f'processing {i}/{self.repeats}')
+            shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
+            train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset)
+            train_data_ = self.df_to_vector(train_data)
+            test_data_ = self.df_to_vector(test_data)
+            X_train, y_train = self.x_y_split_vector(train_data_)
+            X_test, y_test = self.x_y_split_vector(test_data_) 
+            
+            preds = self.multi_model_predict(X_train, y_train, X_test)
+            num_models = len(self.mlmodels)
+            assert len(preds) == num_models
+            y_indexes = list(test_data.index)
+            y_indexes = np.array(y_indexes)
+            for model_name, (predictions, mask) in preds.items():
+                predictions = predictions[mask]
+                y_indexes = y_indexes[mask]
+                for i, index in enumerate(y_indexes):
+                    tracker[index].append(predictions[i])
+        model_predictions = self.handle_tracker(tracker)
+
+        corrects, wrongs = self.compare(model_predictions)
+        result = self.evaluate(corrects, change_indexes, wrongs)
+        logger.info(f'result : {result}') 
+        return result  
     
+        #     num_models = len(self.mlmodels)
+        #     # assert len(preds[0]) == split_point
+        #     y_indexes = list(test_data.index)
+        #     for x in range(num_models):
+        #         for i, index in enumerate(y_indexes):
+        #             tracker[index].append(preds[x][i])
+        # item_preds, model_guess = self.handle_tracker(tracker, wrong_dataset)
+        # corrects, wrongs = self.compare(model_guess)
+        # result = self.evaluate(corrects, change_indexes, wrongs)
+        # logger.info(f'result : {result}') 
+        # return result 
+
     def load_iris_dataset(self):
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
         names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
@@ -77,11 +128,11 @@ class CorrectLabels:
         return shuffled_dataset
         
     def make_wrong(self, dataset):
-        change_indexes = random.sample(range(0,len(dataset)+1),
+        change_indexes = random.sample(range(0,len(dataset)),
                                        self.num_of_wrongs)
         trues = []
         wrongs = []
-        wrong_dataset = dataset.copy()
+        wrong_dataset = dataset.copy(deep = True)
         for i in change_indexes:
             true_label = self.dataset.at[i , self.label_column_name]
             trues.append(true_label)
@@ -106,13 +157,13 @@ class CorrectLabels:
         
     def form_ml_models(self):
         models = {}
-        #models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
-        models['KNN'] = KNeighborsClassifier()
+        # models['LR'] = LogisticRegression(solver='liblinear', multi_class='ovr')
+        # models['KNN'] = KNeighborsClassifier()
         models['RF'] = RandomForestClassifier()
-        #models['NB'] = GaussianNB()
+        # models['NB'] = GaussianNB()
         # models['SVM'] = SVC(gamma='auto')
         #models['MultinomialNB'] = MultinomialNB()
-        models['AdaBoost'] = AdaBoostClassifier() 
+        # models['AdaBoost'] = AdaBoostClassifier() 
         # models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
@@ -127,32 +178,30 @@ class CorrectLabels:
 
         batch_size = 64
         # without data augmentation
-        model.fit(X_train, Y_train, batch_size = batch_size, epochs = self.epochs, 
-        validation_data = (X_val, Y_val), verbose = 2)
-
-        return model     
+        return model.fit(X_train, Y_train, batch_size = batch_size, epochs = self.epochs, 
+        validation_data = (X_val, Y_val), verbose = 2)   
     
     def fit_(self, model, X_train, y_train):
-        model.fit(X_train, y_train)
-        return model
+        return model.fit(X_train, y_train)
     
     def predict_(self, model,  X_test):
         predictions = model.predict(X_test)
-        return predictions
-        
+        proba = model.predict_proba(X_test)
+        mask = np.max(proba, axis = 1) > self.threshold
+        return predictions, mask
+
     def multi_model_predict(self, X_train, y_train, X_test):
-        preds = []
+        preds = {}
         for model_name, model in self.mlmodels.items():
-            print(f'fitting and predicting with {model_name}')
             model = self.fit_(model, X_train, y_train)
-            predictions = self.predict_(model, X_test)
-            preds.append(predictions)
+            predictions, mask = self.predict_(model, X_test)
+            preds[model_name] = (predictions, mask)
         return preds
     
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
         preds = []
         for model_name, model in self.dlmodels.items():
-            print(f'fitting and predicting with {model_name}')
+            logger.info(f'fitting and predicting with {model_name}')
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
             predictions = self.predict_(model, X_test)
             # Convert one hot vectors to predictions classes 
@@ -160,74 +209,82 @@ class CorrectLabels:
             preds.append(predictions)
         return preds
     
-    
-    def handle_tracker(self, tracker, wrong_dataset):
-        wrong_data_labels = list(wrong_dataset[self.label_column_name])
-        assert len(list(self.dataset[self.label_column_name])) == \
-        len(list(wrong_dataset[self.label_column_name]))
-        item_preds = defaultdict()
-        model_guess = []
+    # def handle_tracker(self, tracker, wrong_dataset):
+    #     wrong_data_labels = list(wrong_dataset[self.label_column_name])
+    #     assert len(list(self.dataset[self.label_column_name])) == \
+    #     len(list(wrong_dataset[self.label_column_name]))
+    #     item_preds = defaultdict()
+    #     model_guess = []
+    #     for i in range(len(self.dataset)):
+    #         if tracker[i]:
+    #             highest_label = max(Counter(tracker[i]), key=Counter(tracker[i]).get)
+    #             item_preds[i] =  highest_label
+    #             model_guess.append(highest_label)
+    #         else:
+    #             item_preds[i] = wrong_data_labels[i]
+    #             model_guess.append(wrong_data_labels[i])
+    #     return item_preds, model_guess
+
+    def handle_tracker(self, tracker):
+        model_prediction = defaultdict()
         for i in range(len(self.dataset)):
-            if tracker[i]:
-                item_preds[i] = max(Counter(tracker[i]), key=Counter(tracker[i]).get) 
-                model_guess.append(max(Counter(tracker[i]), key=Counter(tracker[i]).get))
+            if tracker[i] and (len(tracker[i]) > self.min_num_predictions):
+                highest_label = max(Counter(tracker[i]), key=Counter(tracker[i]).get)
+                model_prediction[i] =  highest_label
             else:
-                item_preds[i] = wrong_data_labels[i]
-                model_guess.append(wrong_data_labels[i])
-        return item_preds, model_guess
+                pass
+        return model_prediction
    
-    def compare(self, model_guess):
+    def compare(self, model_predictions):
         actuals = list(self.dataset[self.label_column_name])
-        predicted = model_guess 
-        corrects = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] == j[1]]
-        wrongs = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] != j[1]]
-        return corrects, wrongs
- 
+        correct_predicted = []
+        wrong_predicted = []
+        for index, prediction in model_predictions.items():
+            if prediction == actuals[index]:
+                correct_predicted.append(index)
+            else:
+                wrong_predicted.append(index)
+        return correct_predicted, wrong_predicted
+
+    # def compare(self, model_guess):
+    #     actuals = list(self.dataset[self.label_column_name])
+    #     predicted = model_guess 
+    #     corrects = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] == j[1]]
+    #     wrongs = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] != j[1]]
+    #     return corrects, wrongs
+
     def evaluate(self, corrects, change_indexes, wrongs):
         return {
             'data length' : len(self.dataset),
             'split rate' : self.split_rate,
             'repeats' : self.repeats,
             'total wrongs start' : self.num_of_wrongs,
-            'number of corrects' : len(corrects),
-            'number of wrongs' : len(wrongs),
-            'number of wrong indexes'  : len(change_indexes),
+            'number of corrects' : len(self.dataset) - len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
+            'number of wrongs' : len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
             'number of corrected' : len(set(change_indexes) & set(corrects)),
+            'number of can not corrected' : self.num_of_wrongs - len(set(change_indexes) & set(corrects)),
             'number of missed' : len(set(change_indexes) & set(wrongs)), 
-            'number of wronged' : len((set(change_indexes) | set(wrongs)) - set(change_indexes))   
+            'number of wronged' : len(set(wrongs) - (set(change_indexes) & set(wrongs))) 
         }
+
+    # def evaluate(self, corrects, change_indexes, wrongs):
+    #     return {
+    #         'data length' : len(self.dataset),
+    #         'split rate' : self.split_rate,
+    #         'repeats' : self.repeats,
+    #         'total wrongs start' : self.num_of_wrongs,
+    #         'number of corrects' : len(corrects),
+    #         'number of wrongs' : len(wrongs),
+    #         'number of corrected' : len(set(change_indexes) & set(corrects)),
+    #         'number of missed' : len(set(change_indexes) & set(wrongs)), 
+    #         'number of wronged' : len((set(change_indexes) | set(wrongs)) - set(change_indexes))  # set(wrongs) - (set(change_indexes) & set(wrongs)) 
+    #     }
         
-    def correct_wrong_labels(self):
-        tracker = defaultdict(list)
-        wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
-        for i in range(self.repeats):
-            print(f'processing {i}/{self.repeats}')
-            dataset = self.shuffle_dataset(wrong_dataset)
-            train_data, test_data, split_point = self.dataset_train_test_split(wrong_dataset)
-            train_data_ = self.df_to_vector(train_data)
-            test_data_ = self.df_to_vector(test_data)
-            X_train, y_train = self.x_y_split_vector(train_data_)
-            X_test, y_test = self.x_y_split_vector(test_data_) 
-            
-            preds = self.multi_model_predict(X_train, y_train, X_test)
-            num_models = len(self.mlmodels)
-            assert len(preds[0]) == split_point
-            y_indexes = list(test_data.index)
-            for x in range(num_models):
-                for i, index in enumerate(y_indexes):
-                    tracker[index].append(preds[x][i])
-        item_preds, model_guess = self.handle_tracker(tracker, wrong_dataset)
-        corrects, wrongs = self.compare(model_guess)
-        result = self.evaluate(corrects, change_indexes, wrongs)
-        print('result : ', result) 
-        return result
-    
-    
     def correct_wrong_labels_cnn(self):
         tracker = defaultdict(list)
         wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
         for i in range(self.repeats):
-            print(f'processing {i}/{self.repeats}')
+            logger.info(f'processing {i}/{self.repeats}')
             dataset = self.shuffle_dataset(wrong_dataset)
             train_data, test_data, split_point = self.dataset_train_test_split(wrong_dataset)
             # Drop 'label' column
@@ -286,8 +343,8 @@ class CorrectLabels:
             for x in range(num_models):
                 for i, index in enumerate(y_indexes):
                     tracker[index].append(preds[x][i])
-        item_preds, model_guess = self.handle_tracker(tracker, wrong_dataset)
+        item_preds= self.handle_tracker(tracker, wrong_dataset)
         corrects, wrongs = self.compare(model_guess)
         result = self.evaluate(corrects, change_indexes, wrongs)
-        print('result : ', result) 
+        logger.info('result : {result}') 
         return result

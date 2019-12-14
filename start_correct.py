@@ -1,30 +1,46 @@
 import pandas
+import logging
 from argparse import ArgumentParser
 
 from correct_data_labels import CorrectLabels
 
+logging.basicConfig(
+            format = '%(asctime)s:%(funcName)s:%(levelname)s:%(name)s:%(message)s')
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+datasets = ['iris', 'mnist']
 def start_correct(num_of_wrongs, 
                     repeats, 
                     split_rate,
                     path,
                     epochs,
-                    ml,
-                    save_file_name):
+                    dl,
+                    save_file_name,
+                    dataset,
+                    threshold,
+                    min_num_predictions):
     if not num_of_wrongs:
-        num_of_wrongs = [100]
+        num_of_wrongs = [10, 15, 25, 35, 50]
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [1000]
+        repeats = [250, 500, 1000]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [0.01]
+        split_rate = [0.1, 0.2, 0.25, 0.3]
     else:
         split_rate = [float(v) for v in split_rate]
     if not path:
         path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
         # path = '/Users/muratyalcin/Downloads/train.csv'
+
+    def load_iris_dataset():
+        url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
+        names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
+        dataset = pandas.read_csv(url, names=names)
+        return dataset
     def load_mnist_dataset(path):
         t = pandas.read_csv(path)
         cols = list(t.columns)
@@ -35,24 +51,33 @@ def start_correct(num_of_wrongs,
     repeats = repeats
     split_rate = split_rate
     results = []
-    print('loading dataset...')
-    dataset = load_mnist_dataset(path)
-    print('experiment started...')
+    logger.info('loading dataset...')
+    if dataset == 'iris':
+        dataset = load_iris_dataset()
+        logger.info('iris dataset loaded successfully...')
+        logger.info(f'length of dataset : {len(dataset)}')
+    elif dataset == 'mnist':
+        dataset = load_mnist_dataset(path)
+        logger.info('mnist dataset loaded successfully...')
+        logger.info(f'length of dataset : {len(dataset)}')
+    logger.info('experiment started...')
     for i in num_of_wrongs:
         for j in repeats:
             for k in split_rate:
                 cl = CorrectLabels(dataset = dataset,
-                                    label_column_name = 'label', 
+                                    label_column_name = 'class', # label
                                     epochs = epochs,
                                     num_of_wrongs = i, 
                                     repeats = j, 
                                     split_rate = k,
-                                   mnist = True)
-                print('\ncombination : \n', (i, j, k) , '\n')
-                if ml:
-                    result = cl.correct_wrong_labels()
-                else:
+                                   mnist = True,
+                                   threshold=threshold,
+                                   min_num_predictions = min_num_predictions)
+                logger.info(f'combination : {(i, j, k)}')
+                if dl:
                     result = cl.correct_wrong_labels_cnn()
+                else:
+                    result = cl.correct_wrong_labels()
                 results.append(result)
     res = pandas.DataFrame(results)
     res.to_csv(f'{save_file_name}.csv')
@@ -67,8 +92,11 @@ if __name__=='__main__':
     default = None, nargs = '+')
     parser.add_argument('--path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
-    parser.add_argument('--ml', action = 'store_true')
+    parser.add_argument('--dl', action = 'store_true')
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
+    parser.add_argument('--dataset', type = str, required = False, default = 'iris', choices = datasets)
+    parser.add_argument('--threshold', type = float, required = False, default = 0.90)
+    parser.add_argument('--min_num_predictions', type = int, required = False, default = 3)
     args = parser.parse_args()
 
     start_correct(args.num_of_wrongs, 
@@ -76,5 +104,8 @@ if __name__=='__main__':
                     args.split_rate,
                     args.path,
                     args.epochs,
-                    args.ml,
-                    args.save_file_name)
+                    args.dl,
+                    args.save_file_name,
+                    args.dataset,
+                    args.threshold,
+                    args.min_num_predictions)
