@@ -161,9 +161,9 @@ class CorrectLabels:
         models['RF'] = RandomForestClassifier()
         # models['NB'] = GaussianNB()
         # models['SVM'] = SVC(gamma='auto')
-        #models['MultinomialNB'] = MultinomialNB()
+        models['MultinomialNB'] = MultinomialNB()
         # models['AdaBoost'] = AdaBoostClassifier() 
-        # models['GradientBoost'] = GradientBoostingClassifier()
+        models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
     def form_dl_models(self):
@@ -200,7 +200,6 @@ class CorrectLabels:
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
         preds = []
         for model_name, model in self.dlmodels.items():
-            logger.info(f'fitting and predicting with {model_name}')
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
             predictions = self.predict_(model, X_test)
             # Convert one hot vectors to predictions classes 
