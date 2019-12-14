@@ -94,7 +94,6 @@ class CorrectLabels:
 
         corrects, wrongs = self.compare(model_predictions)
         result = self.evaluate(corrects, change_indexes, wrongs)
-        logger.info(f'result : {result}') 
         return result  
     
         #     num_models = len(self.mlmodels)

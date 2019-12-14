@@ -21,15 +21,15 @@ def start_correct(num_of_wrongs,
                     threshold,
                     min_num_predictions):
     if not num_of_wrongs:
-        num_of_wrongs = [10, 15, 25, 35, 50]
+        num_of_wrongs = [10, 15, 25, 35, 50, 75, 100]
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [250, 500, 1000]
+        repeats = [250, 500, 1000, 10000]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [0.1, 0.2, 0.25, 0.3]
+        split_rate = [0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
     else:
         split_rate = [float(v) for v in split_rate]
     if not path:
