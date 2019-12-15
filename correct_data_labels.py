@@ -80,33 +80,23 @@ class CorrectLabels:
             X_train, y_train = self.x_y_split_vector(train_data_)
             X_test, y_test = self.x_y_split_vector(test_data_) 
             
+            y_indexes = list(test_data.index)
+            y_indexes = np.array(y_indexes)
+            assert len(y_indexes) == len(X_test)
             preds = self.multi_model_predict(X_train, y_train, X_test)
             num_models = len(self.mlmodels)
             assert len(preds) == num_models
-            y_indexes = list(test_data.index)
-            y_indexes = np.array(y_indexes)
+
             for model_name, (predictions, mask) in preds.items():
                 predictions = predictions[mask]
-                y_indexes = y_indexes[mask]
-                for i, index in enumerate(y_indexes):
+                y_indexes_ = y_indexes[mask]
+                for i, index in enumerate(y_indexes_):
                     tracker[index].append(predictions[i])
         model_predictions = self.handle_tracker(tracker)
 
         corrects, wrongs = self.compare(model_predictions)
         result = self.evaluate(corrects, change_indexes, wrongs)
         return result  
-    
-        #     num_models = len(self.mlmodels)
-        #     # assert len(preds[0]) == split_point
-        #     y_indexes = list(test_data.index)
-        #     for x in range(num_models):
-        #         for i, index in enumerate(y_indexes):
-        #             tracker[index].append(preds[x][i])
-        # item_preds, model_guess = self.handle_tracker(tracker, wrong_dataset)
-        # corrects, wrongs = self.compare(model_guess)
-        # result = self.evaluate(corrects, change_indexes, wrongs)
-        # logger.info(f'result : {result}') 
-        # return result 
 
     def load_iris_dataset(self):
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
@@ -283,8 +273,8 @@ class CorrectLabels:
         wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
         for i in range(self.repeats):
             logger.info(f'processing {i}/{self.repeats}')
-            dataset = self.shuffle_dataset(wrong_dataset)
-            train_data, test_data, split_point = self.dataset_train_test_split(wrong_dataset)
+            dataset_ = self.shuffle_dataset(wrong_dataset)
+            train_data, test_data, split_point = self.dataset_train_test_split(dataset_)
             # Drop 'label' column
             X_train = train_data.drop(labels = ["label"],axis = 1) 
             Y_train = train_data["label"]
