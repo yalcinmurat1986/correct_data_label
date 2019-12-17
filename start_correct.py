@@ -36,8 +36,8 @@ def start_correct(num_of_wrongs,
     else:
         split_rate = [float(v) for v in split_rate]
     if not path:
-        # path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
-        path = '/Users/muratyalcin/Downloads/train.csv'
+        path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
+        # path = '/Users/muratyalcin/Downloads/train.csv'
 
     def load_iris_dataset():
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
