@@ -119,17 +119,21 @@ class CorrectLabels:
             
             # Split the train and the validation set for the fitting
             X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1)
+            y_indexes = list(test_data.index)
+            y_indexes = np.array(y_indexes)
+            assert len(y_indexes) == len(X_test)
             preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
             num_models = len(self.dlmodels)
-            assert len(preds[0]) == split_point
-            y_indexes = list(test_data.index)
-            for x in range(num_models):
-                for i, index in enumerate(y_indexes):
-                    tracker[index].append(preds[x][i])
-        model_predictions= self.handle_tracker(tracker)
+            assert len(preds) == num_models
+            for model_name, (predictions, mask) in preds.items():
+                predictions = predictions[mask]
+                y_indexes_ = y_indexes[mask]
+                for i, index in enumerate(y_indexes_):
+                    tracker[index].append(predictions[i])
+        model_predictions = self.handle_tracker(tracker)
+
         corrects, wrongs = self.compare(model_predictions)
         result = self.evaluate(corrects, change_indexes, wrongs)
-        logger.info('result : {result}') 
         return result
         
     def load_iris_dataset(self):
@@ -201,12 +205,17 @@ class CorrectLabels:
 
         batch_size = 64
         # without data augmentation
-        return model.fit(X_train, Y_train, batch_size = batch_size, epochs = self.epochs, 
-        validation_data = (X_val, Y_val), verbose = 2)   
-    
+        history = model.fit(X_train, 
+                        Y_train, 
+                        batch_size = batch_size, 
+                        epochs = self.epochs, 
+                        validation_data = (X_val, Y_val), 
+                        verbose = 2)   
+        return model
+
     def fit_(self, model, X_train, y_train):
         return model.fit(X_train, y_train)
-    
+
     def predict_(self, model,  X_test):
         predictions = model.predict(X_test)
         proba = model.predict_proba(X_test)
@@ -222,13 +231,14 @@ class CorrectLabels:
         return preds
     
     def multi_model_predict_cnn(self, X_train, Y_train, X_val, Y_val, X_test):
-        preds = []
+        preds = {}
         for model_name, model in self.dlmodels.items():
             model = self.fit_cnn(model, X_train, Y_train, X_val, Y_val)
-            predictions = self.predict_(model, X_test)
+            predictions, mask = self.predict_(model, X_test)
+            preds[model_name] = (predictions, mask)
             # Convert one hot vectors to predictions classes 
-            predictions = np.argmax(predictions,axis = 1) 
-            preds.append(predictions)
+            # predictions = np.argmax(predictions,axis = 1) 
+            # preds.append(predictions)
         return preds
 
     def handle_tracker(self, tracker):

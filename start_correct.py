@@ -27,7 +27,7 @@ def start_correct(num_of_wrongs,
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [2]
+        repeats = [1]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
@@ -36,8 +36,8 @@ def start_correct(num_of_wrongs,
     else:
         split_rate = [float(v) for v in split_rate]
     if not path:
-        path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
-        # path = '/Users/muratyalcin/Downloads/train.csv'
+        # path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
+        path = '/Users/muratyalcin/Downloads/train.csv'
 
     def load_iris_dataset():
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
@@ -68,7 +68,7 @@ def start_correct(num_of_wrongs,
         for j in repeats:
             for k in split_rate:
                 cl = CorrectLabels(dataset = dataset,
-                                    label_column_name = label_name,
+                                    label_column_name = label_name, # class
                                     epochs = epochs,
                                     num_of_wrongs = i, 
                                     repeats = j, 
@@ -97,7 +97,7 @@ if __name__=='__main__':
     parser.add_argument('--epochs', type = int, required = False, default = 10)
     parser.add_argument('--dl', action = 'store_true')
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
-    parser.add_argument('--dataset', type = str, required = False, default = 'iris', choices = datasets)
+    parser.add_argument('--dataset', type = str, required = False, default = 'mnist', choices = datasets)
     parser.add_argument('--threshold', type = float, required = False, default = 0.90)
     parser.add_argument('--min_num_predictions', type = int, required = False, default = 3)
     parser.add_argument('--label_name', type = str, default = 'label')
