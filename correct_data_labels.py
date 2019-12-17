@@ -98,6 +98,74 @@ class CorrectLabels:
         result = self.evaluate(corrects, change_indexes, wrongs)
         return result  
 
+    def correct_wrong_labels_cnn(self):
+            tracker = defaultdict(list)
+            wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
+            for i in range(self.repeats):
+                logger.info(f'processing {i}/{self.repeats}')
+                dataset_ = self.shuffle_dataset(wrong_dataset)
+                train_data, test_data, split_point = self.dataset_train_test_split(dataset_)
+                # Drop 'label' column
+                X_train = train_data.drop(labels = ["label"],axis = 1) 
+                Y_train = train_data["label"]
+
+                X_test = test_data.drop(labels = ["label"],axis = 1) 
+                Y_test = test_data["label"]
+                # Normalize the data
+                X_train = X_train / 255.0
+                X_test = X_test / 255.0
+
+                # Reshape image in 3 dimensions (height = 28px, width = 28px , canal = 1)
+                X_train = X_train.values.reshape(-1,28,28,1)
+                X_test = X_test.values.reshape(-1,28,28,1)
+                
+                # Encode labels to one hot vectors (ex : 2 -> [0,0,1,0,0,0,0,0,0,0])
+                Y_train = to_categorical(Y_train, num_classes = 10)
+                Y_test = to_categorical(Y_test, num_classes = 10)
+                
+                # Split the train and the validation set for the fitting
+                X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1)
+
+                
+    #             # Set a learning rate annealer
+    #             learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
+    #                                             patience=3, 
+    #                                             verbose=1, 
+    #                                             factor=0.5, 
+    #                                             min_lr=0.00001)
+
+    #             datagen = ImageDataGenerator(
+    #                     featurewise_center=False,  # set input mean to 0 over the dataset
+    #                     samplewise_center=False,  # set each sample mean to 0
+    #                     featurewise_std_normalization=False,  # divide inputs by std of the dataset
+    #                     samplewise_std_normalization=False,  # divide each input by its std
+    #                     zca_whitening=False,  # apply ZCA whitening
+    #                     rotation_range=10,  # randomly rotate images in the range (degrees, 0 to 180)
+    #                     zoom_range = 0.1, # Randomly zoom image 
+    #                     width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+    #                     height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+    #                     horizontal_flip=False,  # randomly flip images
+    #                     vertical_flip=False)  # randomly flip images
+
+    #             datagen.fit(X_train)
+                
+    #             # Fit the model
+    #             history = model.fit_generator(datagen.flow(X_train,Y_train, batch_size=batch_size),
+    #                               epochs = self.epochs, validation_data = (X_val,Y_val),
+    #                               verbose = 2, steps_per_epoch=X_train.shape[0] // batch_size
+    #                               , callbacks=[learning_rate_reduction])
+                preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
+                num_models = len(self.dlmodels)
+                assert len(preds[0]) == split_point
+                y_indexes = list(test_data.index)
+                for x in range(num_models):
+                    for i, index in enumerate(y_indexes):
+                        tracker[index].append(preds[x][i])
+            item_preds= self.handle_tracker(tracker, wrong_dataset)
+            corrects, wrongs = self.compare(model_guess)
+            result = self.evaluate(corrects, change_indexes, wrongs)
+            logger.info('result : {result}') 
+            return result
     def load_iris_dataset(self):
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
         names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
@@ -151,16 +219,16 @@ class CorrectLabels:
         models['RF'] = RandomForestClassifier()
         # models['NB'] = GaussianNB()
         # models['SVM'] = SVC(gamma='auto')
-        models['MultinomialNB'] = MultinomialNB()
+        # models['MultinomialNB'] = MultinomialNB()
         # models['AdaBoost'] = AdaBoostClassifier() 
-        models['GradientBoost'] = GradientBoostingClassifier()
+        # models['GradientBoost'] = GradientBoostingClassifier()
         return models
 
     def form_dl_models(self):
         models = {}
         # models['baseline'] = create_baseline_model(self.num_of_labels, self.num_of_features)
         models['CNN'] = create_cnn_model(self.num_of_labels)
-        models['CNN2'] = create_cnn_model_2(self.num_of_labels)
+        # models['CNN2'] = create_cnn_model_2(self.num_of_labels)
         return models       
 
     def fit_cnn(self, model, X_train, Y_train, X_val, Y_val):
@@ -268,71 +336,3 @@ class CorrectLabels:
     #         'number of wronged' : len((set(change_indexes) | set(wrongs)) - set(change_indexes))  # set(wrongs) - (set(change_indexes) & set(wrongs)) 
     #     }
         
-    def correct_wrong_labels_cnn(self):
-        tracker = defaultdict(list)
-        wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
-        for i in range(self.repeats):
-            logger.info(f'processing {i}/{self.repeats}')
-            dataset_ = self.shuffle_dataset(wrong_dataset)
-            train_data, test_data, split_point = self.dataset_train_test_split(dataset_)
-            # Drop 'label' column
-            X_train = train_data.drop(labels = ["label"],axis = 1) 
-            Y_train = train_data["label"]
-
-            X_test = test_data.drop(labels = ["label"],axis = 1) 
-            Y_test = test_data["label"]
-            # Normalize the data
-            X_train = X_train / 255.0
-            X_test = X_test / 255.0
-
-            # Reshape image in 3 dimensions (height = 28px, width = 28px , canal = 1)
-            X_train = X_train.values.reshape(-1,28,28,1)
-            X_test = X_test.values.reshape(-1,28,28,1)
-            
-            # Encode labels to one hot vectors (ex : 2 -> [0,0,1,0,0,0,0,0,0,0])
-            Y_train = to_categorical(Y_train, num_classes = 10)
-            Y_test = to_categorical(Y_test, num_classes = 10)
-            
-            # Split the train and the validation set for the fitting
-            X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1)
-
-            
-#             # Set a learning rate annealer
-#             learning_rate_reduction = ReduceLROnPlateau(monitor='val_acc', 
-#                                             patience=3, 
-#                                             verbose=1, 
-#                                             factor=0.5, 
-#                                             min_lr=0.00001)
-
-#             datagen = ImageDataGenerator(
-#                     featurewise_center=False,  # set input mean to 0 over the dataset
-#                     samplewise_center=False,  # set each sample mean to 0
-#                     featurewise_std_normalization=False,  # divide inputs by std of the dataset
-#                     samplewise_std_normalization=False,  # divide each input by its std
-#                     zca_whitening=False,  # apply ZCA whitening
-#                     rotation_range=10,  # randomly rotate images in the range (degrees, 0 to 180)
-#                     zoom_range = 0.1, # Randomly zoom image 
-#                     width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
-#                     height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
-#                     horizontal_flip=False,  # randomly flip images
-#                     vertical_flip=False)  # randomly flip images
-
-#             datagen.fit(X_train)
-            
-#             # Fit the model
-#             history = model.fit_generator(datagen.flow(X_train,Y_train, batch_size=batch_size),
-#                               epochs = self.epochs, validation_data = (X_val,Y_val),
-#                               verbose = 2, steps_per_epoch=X_train.shape[0] // batch_size
-#                               , callbacks=[learning_rate_reduction])
-            preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
-            num_models = len(self.dlmodels)
-            assert len(preds[0]) == split_point
-            y_indexes = list(test_data.index)
-            for x in range(num_models):
-                for i, index in enumerate(y_indexes):
-                    tracker[index].append(preds[x][i])
-        item_preds= self.handle_tracker(tracker, wrong_dataset)
-        corrects, wrongs = self.compare(model_guess)
-        result = self.evaluate(corrects, change_indexes, wrongs)
-        logger.info('result : {result}') 
-        return result

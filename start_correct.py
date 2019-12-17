@@ -19,22 +19,25 @@ def start_correct(num_of_wrongs,
                     save_file_name,
                     dataset,
                     threshold,
-                    min_num_predictions):
+                    min_num_predictions,
+                    label_name):
     if not num_of_wrongs:
-        num_of_wrongs = [10, 15, 25, 35, 50, 75, 100]
+        # num_of_wrongs = [10, 15, 25, 35, 50, 75, 100]
+        num_of_wrongs = [10]
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [250, 500, 1000, 10000]
+        repeats = [2]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+        # split_rate = [0.1, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+        split_rate = [0.01]
     else:
         split_rate = [float(v) for v in split_rate]
     if not path:
-        path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
-        # path = '/Users/muratyalcin/Downloads/train.csv'
+        # path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
+        path = '/Users/muratyalcin/Downloads/train.csv'
 
     def load_iris_dataset():
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
@@ -65,7 +68,7 @@ def start_correct(num_of_wrongs,
         for j in repeats:
             for k in split_rate:
                 cl = CorrectLabels(dataset = dataset,
-                                    label_column_name = 'class', # label
+                                    label_column_name = label_name,
                                     epochs = epochs,
                                     num_of_wrongs = i, 
                                     repeats = j, 
@@ -97,6 +100,7 @@ if __name__=='__main__':
     parser.add_argument('--dataset', type = str, required = False, default = 'iris', choices = datasets)
     parser.add_argument('--threshold', type = float, required = False, default = 0.90)
     parser.add_argument('--min_num_predictions', type = int, required = False, default = 3)
+    parser.add_argument('--label_name', type = str, default = 'label')
     args = parser.parse_args()
 
     start_correct(args.num_of_wrongs, 
@@ -108,4 +112,5 @@ if __name__=='__main__':
                     args.save_file_name,
                     args.dataset,
                     args.threshold,
-                    args.min_num_predictions)
+                    args.min_num_predictions,
+                    args.label_name)
