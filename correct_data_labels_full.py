@@ -103,7 +103,6 @@ class CorrectLabels:
             assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
             result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step)
             
-            logger.info(f'{step}th step results : {result}')
             results.append(result)
 
         return results  
@@ -268,20 +267,18 @@ class CorrectLabels:
         return model_prediction
    
     def compare(self, model_predictions, wrong_dataset):
-        actuals = list(self.dataset[self.label_column_name])
-        current_labels = list(wrong_dataset[self.label_column_name])
         correct_predicted = []
         wrong_predicted = []
         wrong_indexes = []
         correct_indexes = []
-        for index, value in enumerate(actuals):
-            if value == current_labels[index]:
+        for index in range(len(self.dataset[self.label_column_name])):
+            if self.dataset.at[index, self.label_column_name] == wrong_dataset.at[index, self.label_column_name]:
                 correct_indexes.append(index)
-            elif value != current_labels[index]:
+            elif self.dataset.at[index, self.label_column_name] != wrong_dataset.at[index, self.label_column_name]:
                 wrong_indexes.append(index)
 
         for index, prediction in model_predictions.items():
-            if prediction == actuals[index]:
+            if prediction == self.dataset.at[index, self.label_column_name]:
                 correct_predicted.append(index)
             else:
                 wrong_predicted.append(index)
