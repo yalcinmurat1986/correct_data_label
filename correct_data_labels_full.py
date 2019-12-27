@@ -65,7 +65,7 @@ class CorrectLabels:
 
     def correct_wrong_labels(self):
         tracker = defaultdict(list)
-        wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
+        wrong_dataset, trues, wrongs, wrong_indexes = self.make_wrong(self.dataset)
 
         results = []
         for step in range(self.steps):
@@ -92,14 +92,19 @@ class CorrectLabels:
                     for i, index in enumerate(y_indexes_):
                         tracker[index].append(predictions[i])
             model_predictions = self.handle_tracker(tracker)
-            corrects, wrongs = self.compare(model_predictions)
-            result = self.evaluate(corrects, change_indexes, wrongs, step)
-            logger.info(f'{step}th step results : {result}')
+            # result = self.evaluate(corrects, change_indexes, wrongs, step)
 
-            results.append(result)
             # replace predicted labels with existing ones
             for index, prediction in model_predictions.items():
-                wrong_dataset.at[i, self.label_column_name] = prediction
+                wrong_dataset.at[index, self.label_column_name] = prediction
+
+            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes = self.compare(model_predictions, wrong_dataset)
+
+            assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
+            result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step)
+            
+            logger.info(f'{step}th step results : {result}')
+            results.append(result)
 
         return results  
 
@@ -262,25 +267,35 @@ class CorrectLabels:
                 pass
         return model_prediction
    
-    def compare(self, model_predictions):
+    def compare(self, model_predictions, wrong_dataset):
         actuals = list(self.dataset[self.label_column_name])
+        current_labels = list(wrong_dataset[self.label_column_name])
         correct_predicted = []
         wrong_predicted = []
+        wrong_indexes = []
+        correct_indexes = []
+        for index, value in enumerate(actuals):
+            if value == current_labels[index]:
+                correct_indexes.append(index)
+            elif value != current_labels[index]:
+                wrong_indexes.append(index)
+
         for index, prediction in model_predictions.items():
             if prediction == actuals[index]:
                 correct_predicted.append(index)
             else:
                 wrong_predicted.append(index)
-        return correct_predicted, wrong_predicted
+        return correct_predicted, wrong_predicted, wrong_indexes, correct_indexes
 
-    # def compare(self, model_guess):
-    #     actuals = list(self.dataset[self.label_column_name])
-    #     predicted = model_guess 
-    #     corrects = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] == j[1]]
-    #     wrongs = [i for i, j in enumerate(zip(actuals, model_guess)) if j[0] != j[1]]
-    #     return corrects, wrongs
 
-    def evaluate(self, corrects, change_indexes, wrongs, step):
+
+    def evaluate(self,
+                correct_predicted, 
+                wrong_predicted, 
+                wrong_indexes, 
+                correct_indexes, 
+                step):
+
         return {
             'data length' : len(self.dataset),
             'split rate' : self.split_rate,
@@ -288,26 +303,30 @@ class CorrectLabels:
             'step' : step,
             'repeats' : self.repeats,
             'total wrongs start' : self.num_of_wrongs,
-            'number of corrects' : len(self.dataset) - len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
-            'number of wrongs' : len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
-            'number of corrected' : len(set(change_indexes) & set(corrects)),
-            'number of can not corrected' : self.num_of_wrongs - len(set(change_indexes) & set(corrects)),
-            'number of missed' : len(set(change_indexes) & set(wrongs)), 
-            'number of wronged' : len(set(wrongs) - (set(change_indexes) & set(wrongs))) 
+            'number of corrects' : len(correct_indexes),
+            'number of wrongs' : len(wrong_indexes),
+            'correct predicted' : len(correct_predicted),
+            'wrong predicted' : len(wrong_predicted),
+            # 'number of wronged' : len(set(correct_indexes) & set(wrong_predicted)),
+            # 'number of corrected' : len(set(wrong_indexes) & set(correct_predicted))
         }
 
-    # def evaluate(self, corrects, change_indexes, wrongs):
+    # def evaluate(self, corrects, change_indexes, wrongs, step):
     #     return {
     #         'data length' : len(self.dataset),
     #         'split rate' : self.split_rate,
+    #         'steps' : self.steps,
+    #         'step' : step,
     #         'repeats' : self.repeats,
     #         'total wrongs start' : self.num_of_wrongs,
-    #         'number of corrects' : len(corrects),
-    #         'number of wrongs' : len(wrongs),
+    #         'number of corrects' : len(self.dataset) - len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
+    #         'number of wrongs' : len((set(change_indexes) - (set(change_indexes) & set(corrects))) | set(wrongs)),
     #         'number of corrected' : len(set(change_indexes) & set(corrects)),
+    #         'number of can not corrected' : self.num_of_wrongs - len(set(change_indexes) & set(corrects)),
     #         'number of missed' : len(set(change_indexes) & set(wrongs)), 
-    #         'number of wronged' : len((set(change_indexes) | set(wrongs)) - set(change_indexes))  # set(wrongs) - (set(change_indexes) & set(wrongs)) 
+    #         'number of wronged' : len(set(wrongs) - (set(change_indexes) & set(wrongs))) 
     #     }
+
         
 
 
