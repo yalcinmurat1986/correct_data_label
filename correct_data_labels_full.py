@@ -64,11 +64,11 @@ class CorrectLabels:
         #    self.dataset = self.load_mnist_dataset()
 
     def correct_wrong_labels(self):
-        tracker = defaultdict(list)
         wrong_dataset, trues, wrongs, wrong_indexes = self.make_wrong(self.dataset)
 
         results = []
         for step in range(self.steps):
+            tracker = defaultdict(list)
             print(f'processing {step}/{self.steps} steps...')
             for i in range(self.repeats):
                 print(f'processing {i}/{self.repeats} repeats...')
