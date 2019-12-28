@@ -1,5 +1,6 @@
 import pandas, random
 import numpy as np
+import copy
 import logging
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
@@ -94,14 +95,16 @@ class CorrectLabels:
             model_predictions = self.handle_tracker(tracker)
             # result = self.evaluate(corrects, change_indexes, wrongs, step)
 
+            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
             # replace predicted labels with existing ones
             for index, prediction in model_predictions.items():
                 wrong_dataset.at[index, self.label_column_name] = prediction
 
-            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes = self.compare(model_predictions, wrong_dataset)
+            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset, previous_wrong_dataset)
 
             assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
-            result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step)
+
+            result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step, previous_wrong_indexes, previous_correct_indexes)
             
             results.append(result)
 
@@ -266,12 +269,19 @@ class CorrectLabels:
                 pass
         return model_prediction
    
-    def compare(self, model_predictions, wrong_dataset):
+    def compare(self, model_predictions, wrong_dataset, previous_wrong_dataset):
         correct_predicted = []
         wrong_predicted = []
         wrong_indexes = []
         correct_indexes = []
+        previous_wrong_indexes = []
+        previous_correct_indexes = []
         for index in range(len(self.dataset[self.label_column_name])):
+            if self.dataset.at[index, self.label_column_name] == previous_wrong_dataset.at[index, self.label_column_name]:
+                previous_correct_indexes.append(index)
+            elif self.dataset.at[index, self.label_column_name] != previous_wrong_dataset.at[index, self.label_column_name]:
+                previous_wrong_indexes.append(index)
+
             if self.dataset.at[index, self.label_column_name] == wrong_dataset.at[index, self.label_column_name]:
                 correct_indexes.append(index)
             elif self.dataset.at[index, self.label_column_name] != wrong_dataset.at[index, self.label_column_name]:
@@ -282,7 +292,7 @@ class CorrectLabels:
                 correct_predicted.append(index)
             else:
                 wrong_predicted.append(index)
-        return correct_predicted, wrong_predicted, wrong_indexes, correct_indexes
+        return correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes
 
 
 
@@ -291,7 +301,9 @@ class CorrectLabels:
                 wrong_predicted, 
                 wrong_indexes, 
                 correct_indexes, 
-                step):
+                step,
+                previous_wrong_indexes, 
+                previous_correct_indexes):
 
         return {
             'data length' : len(self.dataset),
@@ -304,8 +316,8 @@ class CorrectLabels:
             'number of wrongs' : len(wrong_indexes),
             'correct predicted' : len(correct_predicted),
             'wrong predicted' : len(wrong_predicted),
-            # 'number of wronged' : len(set(correct_indexes) & set(wrong_predicted)),
-            # 'number of corrected' : len(set(wrong_indexes) & set(correct_predicted))
+            'number of wronged' : len(set(previous_correct_indexes) & set(wrong_indexes)),
+            'number of corrected' : len(set(previous_wrong_indexes) & set(correct_indexes))
         }
 
     # def evaluate(self, corrects, change_indexes, wrongs, step):
