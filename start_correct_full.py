@@ -28,15 +28,15 @@ def start_correct(num_of_wrongs,
                     min_num_predictions,
                     label_name):
     if not num_of_wrongs:
-        num_of_wrongs = [4000, 5000, 7000]
+        num_of_wrongs = [25]
     else:
         num_of_wrongs = [int(v) for v in num_of_wrongs]
     if not repeats:
-        repeats = [1000]
+        repeats = [500]
     else:
         repeats = [int(v) for v in repeats]
     if not split_rate:
-        split_rate = [0.1, 0.075, 0.05]
+        split_rate = [0.1]
     else:
         split_rate = [float(v) for v in split_rate]
 
@@ -61,6 +61,7 @@ def start_correct(num_of_wrongs,
     results = []
     logger.info('loading dataset...')
     if dataset == 'iris':
+        label_name = 'class'
         dataset = load_iris_dataset()
         logger.info('iris dataset loaded successfully...')
         logger.info(f'length of dataset : {len(dataset)}')
