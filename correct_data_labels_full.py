@@ -74,7 +74,7 @@ class CorrectLabels:
             for i in range(self.repeats):
                 print(f'processing {i}/{self.repeats} repeats...')
                 shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
-                train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset)
+                train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset, step)
                 train_data_ = self.df_to_vector(train_data)
                 test_data_ = self.df_to_vector(test_data)
                 X_train, y_train = self.x_y_split_vector(train_data_)
@@ -186,7 +186,11 @@ class CorrectLabels:
             wrong_dataset.at[i , self.label_column_name] = wrong_label
         return wrong_dataset, trues, wrongs, change_indexes
     
-    def dataset_train_test_split(self, dataset):
+    def dataset_train_test_split(self, dataset, step):
+        if step > 0:
+            self.split_rate = self.split_rate + 0.05
+        if self.split_rate > 0.5:
+            self.split_rate = 0.5
         split_point = int(len(dataset) * self.split_rate)
         train_data = dataset[split_point:]
         test_data = dataset[:split_point]
