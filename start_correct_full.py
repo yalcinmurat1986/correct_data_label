@@ -1,3 +1,4 @@
+import os
 import pandas
 import logging
 from argparse import ArgumentParser
@@ -9,14 +10,18 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+from pathlib import Path
+home = str(Path.home())
+
 datasets = ['iris', 'mnist']
 def start_correct(num_of_wrongs, 
                     repeats, 
                     split_rate,
-                    path,
+                    data_path,
                     epochs,
                     steps,
                     dl,
+                    save_path,
                     save_file_name,
                     dataset,
                     threshold,
@@ -34,17 +39,18 @@ def start_correct(num_of_wrongs,
         split_rate = [0.1, 0.075, 0.05]
     else:
         split_rate = [float(v) for v in split_rate]
-    if not path:
-        path = '/home/dreamventures/hs/projects/CorrectDataLabel/data/train.csv'
-        # path = '/Users/muratyalcin/Downloads/train.csv'
 
     def load_iris_dataset():
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
         names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
         dataset = pandas.read_csv(url, names=names)
         return dataset
-    def load_mnist_dataset(path):
-        t = pandas.read_csv(path)
+    
+    if not data_path:
+        data_path = os.path.join(home, '/hs/projects/CorrectDataLabel/data/train.csv')
+
+    def load_mnist_dataset(data_path):
+        t = pandas.read_csv(data_path)
         cols = list(t.columns)
         cols = cols[1:] + [cols[0]]
         dataset = t[cols]
@@ -59,7 +65,7 @@ def start_correct(num_of_wrongs,
         logger.info('iris dataset loaded successfully...')
         logger.info(f'length of dataset : {len(dataset)}')
     elif dataset == 'mnist':
-        dataset = load_mnist_dataset(path)
+        dataset = load_mnist_dataset(data_path)
         logger.info('mnist dataset loaded successfully...')
         logger.info(f'length of dataset : {len(dataset)}')
     logger.info('experiment started...')
@@ -83,7 +89,11 @@ def start_correct(num_of_wrongs,
                     result = cl.correct_wrong_labels()
                 results.extend(result)
     res = pandas.DataFrame(results)
-    res.to_csv(f'{save_file_name}.csv')
+    save_path = os.path.join(home, '/hs/projects/CorrectDataLabel/data/results')
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
+    save_file = os.path.join(save_path, f'{save_file_name}.csv' )
+    res.to_csv(save_file)
 
 if __name__=='__main__':
     parser = ArgumentParser()
@@ -93,10 +103,11 @@ if __name__=='__main__':
     default = None,  nargs = '+')
     parser.add_argument('--split_rate',  required = False, 
     default = None, nargs = '+')
-    parser.add_argument('--path', type = str, required = False)
+    parser.add_argument('--data_path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
     parser.add_argument('--steps', type = int, required = False, default = 5)
     parser.add_argument('--dl', action = 'store_true')
+    parser.add_argument('--save_path', type = str, required = False)
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
     parser.add_argument('--dataset', type = str, required = False, default = 'mnist', choices = datasets)
     parser.add_argument('--threshold', type = float, required = False, default = 0.90)
@@ -107,10 +118,11 @@ if __name__=='__main__':
     start_correct(args.num_of_wrongs, 
                     args.repeats, 
                     args.split_rate,
-                    args.path,
+                    args.data_path,
                     args.epochs,
                     args.steps,
                     args.dl,
+                    args.save_path,
                     args.save_file_name,
                     args.dataset,
                     args.threshold,
