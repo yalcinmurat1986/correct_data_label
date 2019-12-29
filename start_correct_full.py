@@ -20,6 +20,7 @@ def start_correct(num_of_wrongs,
                     data_path,
                     epochs,
                     steps,
+                    decay_step,
                     dl,
                     save_path,
                     save_file_name,
@@ -77,6 +78,7 @@ def start_correct(num_of_wrongs,
                                     label_column_name = label_name, # class
                                     epochs = epochs,
                                     steps = steps,
+                                    decay_step = decay_step,
                                     num_of_wrongs = i, 
                                     repeats = j, 
                                     split_rate = k,
@@ -107,6 +109,7 @@ if __name__=='__main__':
     parser.add_argument('--data_path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
     parser.add_argument('--steps', type = int, required = False, default = 5)
+    parser.add_argument('--decay_step', type = int, required = False, default = 3)
     parser.add_argument('--dl', action = 'store_true')
     parser.add_argument('--save_path', type = str, required = False)
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
@@ -122,6 +125,7 @@ if __name__=='__main__':
                     args.data_path,
                     args.epochs,
                     args.steps,
+                    args.decay_step,
                     args.dl,
                     args.save_path,
                     args.save_file_name,

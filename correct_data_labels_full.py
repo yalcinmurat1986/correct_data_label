@@ -38,6 +38,7 @@ class CorrectLabels:
                  split_rate,
                  epochs,
                  steps,
+                 decay_step,
                  min_num_predictions = 0,
                  threshold = 0.85,
                  iris = None,
@@ -48,6 +49,7 @@ class CorrectLabels:
         self.min_num_predictions = min_num_predictions
         self.epochs = epochs
         self.steps = steps
+        self.decay_step = decay_step
         self.dataset = dataset
         self.label_column_name = label_column_name
         self.split_rate = split_rate 
@@ -71,7 +73,7 @@ class CorrectLabels:
         for step in range(self.steps):
             tracker = defaultdict(list)
             print(f'processing {step}/{self.steps} steps...')
-            if step > 0:
+            if step > self.decay_step:
                 self.split_rate = self.split_rate + 0.05
             if self.split_rate > 0.5:
                 self.split_rate = 0.5
