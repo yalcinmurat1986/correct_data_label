@@ -71,6 +71,10 @@ class CorrectLabels:
         for step in range(self.steps):
             tracker = defaultdict(list)
             print(f'processing {step}/{self.steps} steps...')
+            if step > 0:
+                self.split_rate = self.split_rate + 0.05
+            if self.split_rate > 0.5:
+                self.split_rate = 0.5
             for i in range(self.repeats):
                 print(f'processing {i}/{self.repeats} repeats...')
                 shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
@@ -189,10 +193,6 @@ class CorrectLabels:
         return wrong_dataset, trues, wrongs, change_indexes
     
     def dataset_train_test_split(self, dataset, step):
-        if step > 0:
-            self.split_rate = self.split_rate + 0.05
-        if self.split_rate > 0.5:
-            self.split_rate = 0.5
         split_point = int(len(dataset) * self.split_rate)
         train_data = dataset[split_point:]
         test_data = dataset[:split_point]

@@ -90,9 +90,9 @@ def start_correct(num_of_wrongs,
                     result = cl.correct_wrong_labels()
                 results.extend(result)
     res = pandas.DataFrame(results)
-    save_path = os.path.join(home, '/hs/projects/CorrectDataLabel/data/results')
-    # if not os.path.isdir(save_path):
-    #     os.makedirs(save_path)
+    save_path = os.path.join(home, 'hs/projects/CorrectDataLabel/data/results')
+    if not os.path.isdir(save_path):
+        os.makedirs(save_path)
     save_file = os.path.join(save_path, f'{save_file_name}.csv' )
     res.to_csv(save_file)
 
