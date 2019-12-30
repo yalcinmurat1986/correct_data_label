@@ -67,8 +67,8 @@ class CorrectLabels:
         #    self.dataset = self.load_mnist_dataset()
 
     def correct_wrong_labels(self):
-        wrong_dataset, trues, wrongs, wrong_indexes = self.make_wrong(self.dataset)
-
+        wrong_dataset, trues, wrongs, wrong_indexes_ = self.make_wrong(self.dataset)
+        wrong_dataset_orig = copy.deepcopy(wrong_dataset)
         results = []
         for step in range(self.steps):
             tracker = defaultdict(list)
@@ -78,7 +78,8 @@ class CorrectLabels:
             if self.split_rate > 0.5:
                 self.split_rate = 0.5
             for i in range(self.repeats):
-                print(f'processing {i}/{self.repeats} repeats...')
+                # print(f'processing {i}/{self.repeats} repeats...')
+                previous_wrong_dataset = copy.deepcopy(wrong_dataset)
                 shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
                 train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset, step)
                 len_train_data = len(train_data)
@@ -103,12 +104,12 @@ class CorrectLabels:
             model_predictions = self.handle_tracker(tracker)
             # result = self.evaluate(corrects, change_indexes, wrongs, step)
 
-            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
+            
             # replace predicted labels with existing ones
             for index, prediction in model_predictions.items():
-                wrong_dataset.at[index, self.label_column_name] = prediction
+                wrong_dataset_orig.at[index, self.label_column_name] = prediction
 
-            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset, previous_wrong_dataset)
+            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset_orig, previous_wrong_dataset)
 
             assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
 
@@ -120,48 +121,67 @@ class CorrectLabels:
 
     def correct_wrong_labels_cnn(self):
         tracker = defaultdict(list)
-        wrong_dataset, trues, wrongs, change_indexes = self.make_wrong(self.dataset)
-        for i in range(self.repeats):
-            logger.info(f'processing {i}/{self.repeats}')
-            shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
-            train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset)
-            # Drop 'label' column
-            X_train = train_data.drop(labels = ["label"],axis = 1) 
-            Y_train = train_data["label"]
+        wrong_dataset, trues, wrongs, change_indexes_ = self.make_wrong(self.dataset)
+        results = []
+        for step in range(self.steps):
+            tracker = defaultdict(list)
+            print(f'processing {step}/{self.steps} steps...')
+            if step > self.decay_step:
+                self.split_rate = self.split_rate + 0.05
+            if self.split_rate > 0.6:
+                self.split_rate = 0.1
+            for i in range(self.repeats):
+                logger.info(f'processing {i}/{self.repeats}')
+                shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
+                train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset)
+                len_train_data = len(train_data)
+                len_test_data = len(test_data)
+                # Drop 'label' column
+                X_train = train_data.drop(labels = ["label"],axis = 1) 
+                Y_train = train_data["label"]
 
-            X_test = test_data.drop(labels = ["label"],axis = 1) 
-            Y_test = test_data["label"]
-            # Normalize the data
-            X_train = X_train / 255.0
-            X_test = X_test / 255.0
+                X_test = test_data.drop(labels = ["label"],axis = 1) 
+                Y_test = test_data["label"]
+                # Normalize the data
+                X_train = X_train / 255.0
+                X_test = X_test / 255.0
 
-            # Reshape image in 3 dimensions (height = 28px, width = 28px , canal = 1)
-            X_train = X_train.values.reshape(-1,28,28,1)
-            X_test = X_test.values.reshape(-1,28,28,1)
+                # Reshape image in 3 dimensions (height = 28px, width = 28px , canal = 1)
+                X_train = X_train.values.reshape(-1,28,28,1)
+                X_test = X_test.values.reshape(-1,28,28,1)
+                
+                # Encode labels to one hot vectors (ex : 2 -> [0,0,1,0,0,0,0,0,0,0])
+                Y_train = to_categorical(Y_train, num_classes = 10)
+                Y_test = to_categorical(Y_test, num_classes = 10)
+                
+                # Split the train and the validation set for the fitting
+                X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1)
+                y_indexes = list(test_data.index)
+                y_indexes = np.array(y_indexes)
+                assert len(y_indexes) == len(X_test)
+                preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
+                num_models = len(self.dlmodels)
+                assert len(preds) == num_models
+                for model_name, (predictions, mask) in preds.items():
+                    predictions = predictions[mask]
+                    y_indexes_ = y_indexes[mask]
+                    for i, index in enumerate(y_indexes_):
+                        tracker[index].append(predictions[i])
+            model_predictions = self.handle_tracker(tracker)
+            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
+            # replace predicted labels with existing ones
+            for index, prediction in model_predictions.items():
+                wrong_dataset.at[index, self.label_column_name] = prediction
+
+            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset, previous_wrong_dataset)
+
+            assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
+            result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step, previous_wrong_indexes, previous_correct_indexes, len_train_data, len_test_data)
             
-            # Encode labels to one hot vectors (ex : 2 -> [0,0,1,0,0,0,0,0,0,0])
-            Y_train = to_categorical(Y_train, num_classes = 10)
-            Y_test = to_categorical(Y_test, num_classes = 10)
-            
-            # Split the train and the validation set for the fitting
-            X_train, X_val, Y_train, Y_val = train_test_split(X_train, Y_train, test_size = 0.1)
-            y_indexes = list(test_data.index)
-            y_indexes = np.array(y_indexes)
-            assert len(y_indexes) == len(X_test)
-            preds = self.multi_model_predict_cnn(X_train, Y_train, X_val, Y_val, X_test)
-            num_models = len(self.dlmodels)
-            assert len(preds) == num_models
-            for model_name, (predictions, mask) in preds.items():
-                predictions = predictions[mask]
-                y_indexes_ = y_indexes[mask]
-                for i, index in enumerate(y_indexes_):
-                    tracker[index].append(predictions[i])
-        model_predictions = self.handle_tracker(tracker)
+            results.append(result)
 
-        corrects, wrongs = self.compare(model_predictions)
-        result = self.evaluate(corrects, change_indexes, wrongs)
-        return result
-        
+        return results
+
     def load_iris_dataset(self):
         url = "https://raw.githubusercontent.com/jbrownlee/Datasets/master/iris.csv"
         names = ['sepal-length', 'sepal-width', 'petal-length', 'petal-width', 'class']
@@ -177,7 +197,6 @@ class CorrectLabels:
     
     def shuffle_dataset(self, dataset):
         shuffled_dataset = shuffle(dataset)
-        #shuffled_dataset = shuffled_dataset.reset_index(drop=True)
         return shuffled_dataset
         
     def make_wrong(self, dataset):
@@ -251,8 +270,8 @@ class CorrectLabels:
     def multi_model_predict(self, X_train, y_train, X_test):
         preds = {}
         for model_name, model in self.mlmodels.items():
-            model = self.fit_(model, X_train, y_train)
-            predictions, mask = self.predict_(model, X_test)
+            fitted_model = self.fit_(model, X_train, y_train)
+            predictions, mask = self.predict_(fitted_model, X_test)
             preds[model_name] = (predictions, mask)
         return preds
     

@@ -48,7 +48,7 @@ def start_correct(num_of_wrongs,
         return dataset
     
     if not data_path:
-        data_path = os.path.join(home, '/hs/projects/CorrectDataLabel/data/train.csv')
+        data_path = os.path.join(home, 'hs/projects/CorrectDataLabel/data/train.csv')
 
     def load_mnist_dataset(data_path):
         t = pandas.read_csv(data_path)
