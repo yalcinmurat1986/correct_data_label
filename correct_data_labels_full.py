@@ -127,6 +127,7 @@ class CorrectLabels:
         wrong_dataset, trues, wrongs, change_indexes_ = self.make_wrong(self.dataset)
         results = []
         for step in range(self.steps):
+            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
             tracker = defaultdict(list)
             print(f'processing {step}/{self.steps} steps...')
             if step > self.decay_step:
@@ -171,7 +172,6 @@ class CorrectLabels:
                     for i, index in enumerate(y_indexes_):
                         tracker[index].append(predictions[i])
             model_predictions = self.handle_tracker(tracker)
-            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
             # replace predicted labels with existing ones
             for index, prediction in model_predictions.items():
                 wrong_dataset.at[index, self.label_column_name] = prediction
