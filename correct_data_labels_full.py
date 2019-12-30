@@ -68,9 +68,10 @@ class CorrectLabels:
 
     def correct_wrong_labels(self):
         wrong_dataset, trues, wrongs, wrong_indexes_ = self.make_wrong(self.dataset)
-        wrong_dataset_orig = copy.deepcopy(wrong_dataset)
+        # wrong_dataset_orig = copy.deepcopy(wrong_dataset)
         results = []
         for step in range(self.steps):
+            previous_wrong_dataset = copy.deepcopy(wrong_dataset)
             tracker = defaultdict(list)
             print(f'processing {step}/{self.steps} steps...')
             if step > self.decay_step:
@@ -79,7 +80,6 @@ class CorrectLabels:
                 self.split_rate = 0.1
             for i in range(self.repeats):
                 # print(f'processing {i}/{self.repeats} repeats...')
-                previous_wrong_dataset = copy.deepcopy(wrong_dataset)
                 shuffled_wrong_dataset = self.shuffle_dataset(wrong_dataset)
                 train_data, test_data, split_point = self.dataset_train_test_split(shuffled_wrong_dataset, step)
                 len_train_data = len(train_data)
@@ -97,20 +97,23 @@ class CorrectLabels:
                 assert len(preds) == num_models
 
                 for model_name, (predictions, mask) in preds.items():
-                    predictions = predictions[mask]
+                    predictions_ = predictions[mask]
                     y_indexes_ = y_indexes[mask]
                     for i, index in enumerate(y_indexes_):
-                        tracker[index].append(predictions[i])
+                        tracker[index].append(predictions_[i])
             model_predictions = self.handle_tracker(tracker)
-            # result = self.evaluate(corrects, change_indexes, wrongs, step)
-
             
             # replace predicted labels with existing ones
             for index, prediction in model_predictions.items():
-                wrong_dataset_orig.at[index, self.label_column_name] = prediction
+                wrong_dataset.at[index, self.label_column_name] = prediction
 
-            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset_orig, previous_wrong_dataset)
-
+            correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, previous_wrong_indexes, previous_correct_indexes = self.compare(model_predictions, wrong_dataset, previous_wrong_dataset)
+            # print('correct_predicted : \n', correct_predicted, '\n')
+            # print('wrong_predicted : \n', wrong_predicted, '\n')
+            # print('wrong_indexes : \n', wrong_indexes, '\n')
+            # print('correct_indexes : \n', correct_indexes, '\n')
+            # print('previous_wrong_indexes : \n', previous_wrong_indexes, '\n')
+            # print('previous_correct_indexes : \n', previous_correct_indexes, '\n')
             assert (len(wrong_indexes) + len(correct_indexes)) == len(self.dataset)
 
             result = self.evaluate(correct_predicted, wrong_predicted, wrong_indexes, correct_indexes, step, previous_wrong_indexes, previous_correct_indexes, len_train_data, len_test_data)
@@ -296,7 +299,7 @@ class CorrectLabels:
                 pass
         return model_prediction
    
-    def compare(self, model_predictions, wrong_dataset, previous_wrong_dataset):
+    def compare(self, model_predictions, current_dataset, previous_dataset):
         correct_predicted = []
         wrong_predicted = []
         wrong_indexes = []
@@ -304,14 +307,14 @@ class CorrectLabels:
         previous_wrong_indexes = []
         previous_correct_indexes = []
         for index in range(len(self.dataset[self.label_column_name])):
-            if self.dataset.at[index, self.label_column_name] == previous_wrong_dataset.at[index, self.label_column_name]:
+            if self.dataset.at[index, self.label_column_name] == previous_dataset.at[index, self.label_column_name]:
                 previous_correct_indexes.append(index)
-            elif self.dataset.at[index, self.label_column_name] != previous_wrong_dataset.at[index, self.label_column_name]:
+            elif self.dataset.at[index, self.label_column_name] != previous_dataset.at[index, self.label_column_name]:
                 previous_wrong_indexes.append(index)
 
-            if self.dataset.at[index, self.label_column_name] == wrong_dataset.at[index, self.label_column_name]:
+            if self.dataset.at[index, self.label_column_name] == current_dataset.at[index, self.label_column_name]:
                 correct_indexes.append(index)
-            elif self.dataset.at[index, self.label_column_name] != wrong_dataset.at[index, self.label_column_name]:
+            elif self.dataset.at[index, self.label_column_name] != current_dataset.at[index, self.label_column_name]:
                 wrong_indexes.append(index)
 
         for index, prediction in model_predictions.items():
