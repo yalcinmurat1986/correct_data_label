@@ -40,7 +40,7 @@ class CorrectLabels:
                  steps,
                  decay_step,
                  min_num_predictions = 0,
-                 threshold = 0.85,
+                 threshold = 0.95,
                  iris = None,
                  mnist = None):
         assert split_rate > 0
@@ -75,8 +75,8 @@ class CorrectLabels:
             print(f'processing {step}/{self.steps} steps...')
             if step > self.decay_step:
                 self.split_rate = self.split_rate + 0.05
-            if self.split_rate > 0.5:
-                self.split_rate = 0.5
+            if self.split_rate > 0.7:
+                self.split_rate = 0.1
             for i in range(self.repeats):
                 # print(f'processing {i}/{self.repeats} repeats...')
                 previous_wrong_dataset = copy.deepcopy(wrong_dataset)
@@ -341,6 +341,7 @@ class CorrectLabels:
             'split rate' : self.split_rate,
             'steps' : self.steps,
             'step' : step,
+            'threshold': self.threshold,
             'repeats' : self.repeats,
             'total wrongs start' : self.num_of_wrongs,
             'number of corrects' : len(correct_indexes),

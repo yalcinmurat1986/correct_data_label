@@ -114,7 +114,7 @@ if __name__=='__main__':
     parser.add_argument('--save_path', type = str, required = False)
     parser.add_argument('--save_file_name', type = str, required = False, default = 'results')
     parser.add_argument('--dataset', type = str, required = False, default = 'mnist', choices = datasets)
-    parser.add_argument('--threshold', type = float, required = False, default = 0.90)
+    parser.add_argument('--threshold', type = float, required = False, default = 0.95)
     parser.add_argument('--min_num_predictions', type = int, required = False, default = 3)
     parser.add_argument('--label_name', type = str, default = 'label')
     args = parser.parse_args()
