@@ -76,7 +76,7 @@ class CorrectLabels:
             print(f'processing {step}/{self.steps} steps...')
             if step > self.decay_step:
                 self.split_rate = self.split_rate + 0.05
-            if self.split_rate > 0.4:
+            if self.split_rate > 0.5:
                 self.split_rate = 0.1
             for i in range(self.repeats):
                 # print(f'processing {i}/{self.repeats} repeats...')
