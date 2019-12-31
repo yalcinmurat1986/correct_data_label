@@ -36,6 +36,7 @@ class CorrectLabels:
                  num_of_wrongs, 
                  repeats, 
                  split_rate,
+                 split_rate_threshold,
                  epochs,
                  steps,
                  decay_step,
@@ -53,6 +54,7 @@ class CorrectLabels:
         self.dataset = dataset
         self.label_column_name = label_column_name
         self.split_rate = split_rate 
+        self.split_rate_threshold = split_rate_threshold
         self.num_of_wrongs = num_of_wrongs
         self.repeats = repeats
         self.num_of_features = self.dataset.shape[1]-1
@@ -76,7 +78,7 @@ class CorrectLabels:
             print(f'processing {step}/{self.steps} steps...')
             if step > self.decay_step:
                 self.split_rate = self.split_rate + 0.05
-            if self.split_rate > 0.5:
+            if self.split_rate > self.split_rate_threshold:
                 self.split_rate = 0.1
             for i in range(self.repeats):
                 # print(f'processing {i}/{self.repeats} repeats...')

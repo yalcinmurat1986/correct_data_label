@@ -17,6 +17,7 @@ datasets = ['iris', 'mnist']
 def start_correct(num_of_wrongs, 
                     repeats, 
                     split_rate,
+                    split_rate_threshold,
                     data_path,
                     epochs,
                     steps,
@@ -82,6 +83,7 @@ def start_correct(num_of_wrongs,
                                     num_of_wrongs = i, 
                                     repeats = j, 
                                     split_rate = k,
+                                    split_rate_threshold = split_rate_threshold,
                                    mnist = True,
                                    threshold=threshold,
                                    min_num_predictions = min_num_predictions)
@@ -106,6 +108,8 @@ if __name__=='__main__':
     default = None,  nargs = '+')
     parser.add_argument('--split_rate',  required = False, 
     default = None, nargs = '+')
+    parser.add_argument('--split_rate_threshold',  required = False, 
+    default = 0.6)
     parser.add_argument('--data_path', type = str, required = False)
     parser.add_argument('--epochs', type = int, required = False, default = 10)
     parser.add_argument('--steps', type = int, required = False, default = 5)
@@ -122,6 +126,7 @@ if __name__=='__main__':
     start_correct(args.num_of_wrongs, 
                     args.repeats, 
                     args.split_rate,
+                    args.split_rate_threshold,
                     args.data_path,
                     args.epochs,
                     args.steps,
